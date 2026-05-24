@@ -10,8 +10,19 @@ import "google/protobuf/timestamp.proto";
 
 import "buf/validate/validate.proto";
 
+/**
+ * Сервис управления транзакциями биллинга.
+ * Обеспечивает создание финансовых записей и предоставление истории операций.
+ */
 service TransactionsService {
+  /**
+   * Регистрирует новую транзакцию в системе.
+   * Метод является идемпотентным и защищен от повторной обработки дубликатов по ID.
+   */
   rpc CreateTransaction (CreateTransactionGrpc) returns (google.protobuf.Empty);
+  /**
+  * Возвращает список транзакций с поддержкой гибкой фильтрации, пагинации и сортировки.
+  */
   rpc GetTransactions (GetTransactionsGrpc) returns (GetTransactionsResponseGrpc);
 }
 

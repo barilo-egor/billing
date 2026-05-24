@@ -28,10 +28,19 @@ public class TransactionService {
         this.transactionMapper = transactionMapper;
     }
 
+    /**
+     * Создает новую transaction, если она не была создана ранее.
+     * <p>
+     * Метод идемпотентен: если transaction с указанным ID уже существует в базе данных,
+     * операция логируется как предупреждение и завершается без повторного сохранения.
+     *
+     * @param transactionDTO данные создаваемой transaction (обязательно должен содержать валидный ID)
+     */
     public void create(TransactionDTO transactionDTO) {
         log.debug("Вызов create для transaction: {}", transactionDTO);
         if (transactionRepository.existsById(transactionDTO.getId())) {
-            log.warn("Transaction с id {} уже существует!", transactionDTO.getId());
+            // Изменено: добавлен контекст "при создании"
+            log.warn("Дубликат при создании! Transaction с id {} уже существует.", transactionDTO.getId());
             return;
         }
         Transaction transaction = transactionMapper.toEntity(transactionDTO);
@@ -39,12 +48,34 @@ public class TransactionService {
         log.debug("Успешно создана transaction: {}", transaction.getId());
     }
 
+    /**
+     * Сохраняет transaction в базе данных, если она не была создана ранее.
+     * <p>
+     * Перед записью проверяет существование записи по ID. Если transaction уже есть,
+     * operation логируется как предупреждение и завершается без перезаписи данных.
+     *
+     * @param transactionDTO данные сохраняемой transaction
+     */
     public void save(TransactionDTO transactionDTO) {
         log.debug("Вызов save для transaction: {}", transactionDTO);
+        if (transactionRepository.existsById(transactionDTO.getId())) {
+            log.warn("Пропуск сохранения! Transaction с id {} уже существует.", transactionDTO.getId());
+            return;
+        }
         Transaction transaction = transactionRepository.save(transactionMapper.toEntity(transactionDTO));
         log.debug("Успешно сохранена transaction: {}", transaction.getId());
     }
 
+    /**
+     * Возвращает страницу transaction, соответствующих заданным критериям фильтрации и сортировки.
+     * <p>
+     *
+     * @param spec    спецификация JPA с критериями фильтрации полей
+     * @param page    номер запрашиваемой страницы (начиная с 0)
+     * @param size    количество записей на одной странице
+     * @param sorters список строк для настройки направления сортировки (например, "id,desc")
+     * @return страница {@link Page} с результатами поиска, смаппированными в {@link TransactionDTO}
+     */
     @Transactional(readOnly = true)
     public Page<TransactionDTO> findTransactions(Specification<Transaction> spec, int page, int size, List<String> sorters) {
         Pageable pageable = PageableUtils.createPageable(page, size, sorters);
