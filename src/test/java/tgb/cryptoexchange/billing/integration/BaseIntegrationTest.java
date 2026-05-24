@@ -1,5 +1,11 @@
-package tgb.cryptoexchange.billing;
+package tgb.cryptoexchange.billing.integration;
 
+import io.grpc.ManagedChannel;
+import io.grpc.ManagedChannelBuilder;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.grpc.test.autoconfigure.LocalGrpcPort;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -10,6 +16,7 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.utility.DockerImageName;
+import tgb.cryptoexchange.billing.repository.TransactionRepository;
 
 @ActiveProfiles("test")
 @SpringBootTest(properties = "spring.grpc.server.port=0")
@@ -37,6 +44,34 @@ public abstract class BaseIntegrationTest {
         registry.add("spring.datasource.password", mysql::getPassword);
 
         registry.add("spring.kafka.bootstrap-servers", kafka::getBootstrapServers);
+    }
+
+
+    @Autowired
+    protected TransactionRepository transactionRepository;
+
+    @LocalGrpcPort
+    protected int port;
+
+    protected ManagedChannel channel;
+
+    @BeforeEach
+    void initChannel() {
+        channel = ManagedChannelBuilder.forAddress("localhost", port)
+                .usePlaintext()
+                .build();
+    }
+
+    @BeforeEach
+    void clearDatabase() {
+        transactionRepository.deleteAllInBatch();
+    }
+
+    @AfterEach
+    void tearDown() {
+        if (channel != null) {
+            channel.shutdownNow();
+        }
     }
 
 }

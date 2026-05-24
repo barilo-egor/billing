@@ -46,7 +46,6 @@ public class GlobalGrpcExceptionHandler implements ServerInterceptor {
 
     private Code determineGrpcCode(ErrorCode errorCode) {
         return switch (errorCode) {
-            case INVALID_ARGUMENT -> Code.INVALID_ARGUMENT;
             case NOT_FOUND -> Code.NOT_FOUND;
             case INTERNAL -> Code.INTERNAL;
         };

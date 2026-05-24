@@ -24,7 +24,7 @@ public class TransactionConsumer {
 
     @KafkaListener(topics = "${kafka.topic.billing.transaction}", groupId = "${kafka.group-id}",
             containerFactory = "transactionKafkaListenerContainerFactory")
-    public void getTransaction(@Valid @Payload TransactionDTO dto, @Header(value = KafkaHeaders.RECEIVED_KEY, required = false) String key) {
+    public void saveTransaction(@Valid @Payload TransactionDTO dto, @Header(value = KafkaHeaders.RECEIVED_KEY, required = false) String key) {
         log.trace("Получена transaction. Key={}, value={}", key, dto);
         try {
             transactionService.save(dto);
