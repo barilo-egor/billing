@@ -1,0 +1,19 @@
+spring:
+  grpc:
+    server:
+      host:
+      port:
+  datasource:
+    username: ""
+    password: ""
+    url: ""
+    driver-class-name: ""
+    jpa:
+      hibernate:
+        ddl-auto: update
+    port:
+kafka:
+  group-id:
+  topic:
+    billing:
+      transaction:
