@@ -30,8 +30,8 @@ message CreateTransactionGrpc {
   string id = 1 [(buf.validate.field).string.uuid = true];
   int64 client_id = 2 [(buf.validate.field).int64.gt = 0];
   int32 amount = 3 [(buf.validate.field).int32.gt = 0];
-  string operation = 4 [(buf.validate.field).string.min_len = 1];
-  string type = 5 [(buf.validate.field).string.min_len = 1];
+  string operation = 4 [(buf.validate.field).string.pattern = "^[A-Z_]+$"];
+  string type = 5 [(buf.validate.field).string.pattern = "^[A-Z_]+$"];
   optional string comment = 6;
 }
 
