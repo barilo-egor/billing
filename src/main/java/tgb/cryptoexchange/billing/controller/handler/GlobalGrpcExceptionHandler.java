@@ -1,84 +1,40 @@
 package tgb.cryptoexchange.billing.controller.handler;
 
-import com.google.rpc.Code;
-import io.grpc.*;
+import io.grpc.Status;
+import io.grpc.StatusException;
 import io.grpc.protobuf.StatusProto;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.grpc.server.GlobalServerInterceptor;
+import org.springframework.grpc.server.exception.GrpcExceptionHandler;
 import org.springframework.stereotype.Component;
-import tgb.cryptoexchange.billing.enums.ErrorCode;
 import tgb.cryptoexchange.billing.exceptions.CustomException;
 import tgb.cryptoexchange.billing.exceptions.GrpcValidationException;
 
 @Slf4j
 @Component
-@GlobalServerInterceptor
-public class GlobalGrpcExceptionHandler implements ServerInterceptor {
+public class GlobalGrpcExceptionHandler implements GrpcExceptionHandler {
 
     @Override
-    public <T, O> ServerCall.Listener<T> interceptCall(
-            ServerCall<T, O> call,
-            Metadata headers,
-            ServerCallHandler<T, O> next) {
-
-        ServerCall.Listener<T> delegate = next.startCall(call, headers);
-
-        return new ForwardingServerCallListener.SimpleForwardingServerCallListener<>(delegate) {
-            @Override
-            public void onMessage(T message) {
-                try {
-                    super.onMessage(message);
-                } catch (Exception ex) {
-                    handle(ex, call);
-                }
-            }
-
-            @Override
-            public void onHalfClose() {
-                try {
-                    super.onHalfClose();
-                } catch (Exception ex) {
-                    handle(ex, call);
-                }
-            }
-        };
-    }
-
-    private Code determineGrpcCode(ErrorCode errorCode) {
-        return switch (errorCode) {
-            case NOT_FOUND -> Code.NOT_FOUND;
-            case INTERNAL -> Code.INTERNAL;
-        };
-    }
-
-    private void handle(Exception ex, ServerCall<?, ?> call) {
-        StatusRuntimeException out;
-        switch (ex) {
+    public io.grpc.StatusException handleException(Throwable ex) {
+        return switch (ex) {
             case CustomException customEx -> {
-                Code grpcCode = determineGrpcCode(customEx.getErrorCode());
-                out = buildStatus(grpcCode, ex.getMessage(), customEx.getField(), customEx.getDescription());
-
+                com.google.rpc.Code grpcCode = customEx.getErrorCode();
+                yield buildStatusException(grpcCode, ex.getMessage(), customEx.getField(), customEx.getDescription());
             }
-            case GrpcValidationException grpcEx -> out = StatusProto.toStatusRuntimeException(grpcEx.getRpcStatus());
-            case null, default -> {
+            case GrpcValidationException grpcEx -> StatusProto.toStatusException(grpcEx.getRpcStatus());
+            default -> {
                 log.error("Unexpected system error: ", ex);
-                out = Status.INTERNAL
+                yield Status.INTERNAL
                         .withDescription("Internal server error")
-                        .asRuntimeException();
+                        .asException();
             }
-        }
-        Metadata trailers = out.getTrailers();
-        if (trailers == null) {
-            trailers = new Metadata();
-        }
-        call.close(out.getStatus(), trailers);
+        };
     }
 
-    private StatusRuntimeException buildStatus(Code code, String message,
-                                               String field, String description) {
+    private StatusException buildStatusException(com.google.rpc.Code code, String message, String field,
+            String description) {
         com.google.rpc.Status.Builder statusBuilder = com.google.rpc.Status.newBuilder()
                 .setCode(code.getNumber())
-                .setMessage(message);
+                .setMessage(message != null ? message : "");
 
         com.google.rpc.BadRequest badRequest = com.google.rpc.BadRequest.newBuilder()
                 .addFieldViolations(com.google.rpc.BadRequest.FieldViolation.newBuilder()
@@ -88,7 +44,8 @@ public class GlobalGrpcExceptionHandler implements ServerInterceptor {
                 .build();
         statusBuilder.addDetails(com.google.protobuf.Any.pack(badRequest));
 
-        return StatusProto.toStatusRuntimeException(statusBuilder.build());
+        var runtimeEx = StatusProto.toStatusRuntimeException(statusBuilder.build());
+        return new StatusException(runtimeEx.getStatus(), runtimeEx.getTrailers());
     }
 
 }

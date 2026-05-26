@@ -1,10 +1,10 @@
 package tgb.cryptoexchange.billing.exceptions;
 
-import tgb.cryptoexchange.billing.enums.ErrorCode;
+import com.google.rpc.Code;
 
 public interface CustomException {
 
-    ErrorCode getErrorCode();
+    Code getErrorCode();
 
     String getField();
 

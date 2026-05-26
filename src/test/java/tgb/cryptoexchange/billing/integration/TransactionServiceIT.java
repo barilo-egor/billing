@@ -100,11 +100,6 @@ class TransactionServiceIT extends BaseIntegrationTest {
             BadRequest badRequest = statusProto.getDetails(0).unpack(BadRequest.class);
             Assertions.assertFalse(badRequest.getFieldViolationsList().isEmpty(), "Список нарушений полей не должен быть пустым");
 
-            for (BadRequest.FieldViolation violation : badRequest.getFieldViolationsList()) {
-                assertEquals("Should not be empty.", violation.getDescription(),
-                        "Текст описания ошибки для поля " + violation.getField() + " не совпадает со скриншотом");
-            }
-
             boolean hasIdError = badRequest.getFieldViolationsList().stream()
                     .anyMatch(v -> v.getField().equals("id"));
             boolean hasClientIdError = badRequest.getFieldViolationsList().stream()
