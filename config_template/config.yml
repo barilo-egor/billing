@@ -8,12 +8,14 @@ spring:
     password: ""
     url: ""
     driver-class-name: ""
-    jpa:
-      hibernate:
-        ddl-auto: update
-    port:
+  jpa:
+    hibernate:
+      ddl-auto: update
+  port:
+  kafka:
+    bootstrap-servers:
 kafka:
-  group-id:
+  group-id: ''
   topic:
     billing:
-      transaction:
+      transaction: ''
