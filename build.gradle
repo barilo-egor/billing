@@ -109,3 +109,11 @@ tasks.withType(JavaCompile).configureEach {
 test {
     systemProperty "file.encoding", "UTF-8"
 }
+
+tasks.jar {
+    archiveFileName = "billing.jar"
+}
+
+bootJar {
+    archiveFileName = 'billing.jar'
+}
